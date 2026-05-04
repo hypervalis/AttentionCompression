@@ -1,0 +1,13 @@
+window_id,rarity_bin,path,start,seq_len
+0,very_common,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,0,64
+1,very_common,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,64,64
+2,common,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,128,64
+3,common,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,192,64
+4,typical,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,256,64
+5,typical,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,320,64
+6,rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,384,64
+7,rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,448,64
+8,very_rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,512,64
+9,very_rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,576,64
+10,extreme_rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,640,64
+11,extreme_rare,/home/angus/Code/AttentionCompression/artifacts/e2e_smoke_ci/smoke_tokens.npy,704,64
