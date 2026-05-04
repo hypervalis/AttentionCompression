@@ -1,0 +1,27 @@
+[project]
+name = "attention-compression"
+version = "0.1.0"
+description = "Distribution-aware local attention compression experiments."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+tokenize = [
+  "transformers",
+  "torch",
+]
+plots = [
+  "matplotlib",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["attention_compression*"]

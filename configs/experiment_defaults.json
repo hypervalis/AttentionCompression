@@ -1,0 +1,54 @@
+{
+  "model_name": "allenai/OLMo-1B-0724-hf",
+  "dataset_name": "allenai/dolma",
+  "dataset_config": "v1_6-sample",
+  "raw_corpus_glob": null,
+  "seq_len": 1024,
+  "stride": 1024,
+  "target_layer": 8,
+  "token_id_dtype": "auto",
+  "token_id_dtype_rule": "After tokenizer/model config are available, set dtype once from vocab_size (and tokenizer len): uint16 if vocab_size <= 65535, else uint32.",
+  "bigram_counts": {
+    "representation": "sparse_observed",
+    "key": "prev_token * vocab_size + next_token",
+    "key_dtype": "uint64",
+    "count_dtype": "uint64",
+    "merge_strategy": "Stream all corpus shards sequentially; per-chunk np.unique(keys, return_counts=True); merge run artifacts into one sparse table (parquet or npz)."
+  },
+  "window_scoring": {
+    "mean_log_transition": true,
+    "rarity_score": "negative_mean_log_transition",
+    "notes": "Rough empirical rarity over the corpus; do not engineer for unseen transitions."
+  },
+  "corpus_processing": {
+    "scope": "full_sample",
+    "behavior": "Run over the entire Dolma v1_6-sample; process and merge all shards in order. No random seeks over raw corpus."
+  },
+  "token_shards": {
+    "tokens_per_shard_target": null,
+    "notes": "Shard size flexible; keep sequential layout under data/tokens/."
+  },
+  "train_windows_per_bin": {
+    "extreme_rare": 10000,
+    "very_rare": 20000,
+    "rare": 30000,
+    "typical": 40000,
+    "common": 20000,
+    "very_common": 10000
+  },
+  "eval_windows_per_bin": {
+    "extreme_rare": 2000,
+    "very_rare": 2000,
+    "rare": 2000,
+    "typical": 2000,
+    "common": 2000,
+    "very_common": 2000
+  },
+  "selection": {
+    "stratify_rarity_percentiles": true,
+    "shard_balance_cap": true,
+    "notes": "Two-axis: rarity bin + per-shard cap so one gzip shard cannot dominate."
+  },
+  "compressed_dim": 640,
+  "residual_rank": 8
+}
