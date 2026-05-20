@@ -27,13 +27,13 @@ from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_DIR = _SCRIPT_DIR.parent
-for _p in (str(_REPO_DIR), str(_SCRIPT_DIR)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+_src = str(_REPO_DIR / "src")
+if _src not in sys.path:
+    sys.path.insert(0, _src)
 
 import torch
 
-import _qk_surgery_lib  # noqa: E402
+import attention_compression.qk_surgery as _qk_surgery_lib  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

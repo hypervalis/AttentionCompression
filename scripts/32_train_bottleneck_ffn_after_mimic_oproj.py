@@ -26,12 +26,13 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 
 from attention_compression.activations import find_transformer_layers
 from attention_compression.attention_metrics import cosine_similarity_mean, relative_mse
+from attention_compression.losses import LOSS_KINDS, compression_train_loss
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,14 +63,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--loss-kind",
         default="cosine",
-        choices=["relative", "cosine", "both"],
-        help="Training objective: batch relative MSE to target, mean 1-cosine per token, or weighted mix.",
+        choices=list(LOSS_KINDS),
+        help="relative | cosine | both (convex mix) | relative_plus_cosine (rel + w*cos).",
     )
     p.add_argument(
         "--loss-relative-weight",
         type=float,
         default=0.25,
         help="Weight on relative loss when --loss-kind both (cosine weight is 1 minus this).",
+    )
+    p.add_argument(
+        "--cosine-weight",
+        type=float,
+        default=1.0,
+        help="Multiplier on cosine term when --loss-kind relative_plus_cosine.",
     )
     p.add_argument("--seed", type=int, default=13)
     return p.parse_args()
@@ -224,31 +231,6 @@ class BottleneckFFN(torch.nn.Module):
         return self.up(h)
 
 
-def rel_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    return torch.mean((pred.float() - target.float()) ** 2) / torch.var(target.float()).clamp_min(1e-6)
-
-
-def cosine_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """Mean ``1 - cos(pred, target)`` over token positions (last dim is hidden)."""
-    pred_f = pred.reshape(-1, pred.shape[-1]).float()
-    target_f = target.reshape(-1, target.shape[-1]).float()
-    cos = torch.nn.functional.cosine_similarity(pred_f, target_f, dim=-1)
-    return torch.mean(1.0 - cos)
-
-
-def train_loss(pred: torch.Tensor, target: torch.Tensor, *, loss_kind: str, relative_weight: float) -> torch.Tensor:
-    if loss_kind == "relative":
-        return rel_loss(pred, target)
-    if loss_kind == "cosine":
-        return cosine_loss(pred, target)
-    if loss_kind == "both":
-        w = float(relative_weight)
-        if not 0.0 <= w <= 1.0:
-            raise ValueError("--loss-relative-weight must be in [0, 1] when using both")
-        return w * rel_loss(pred, target) + (1.0 - w) * cosine_loss(pred, target)
-    raise ValueError(loss_kind)
-
-
 @torch.no_grad()
 def evaluate(student, teacher_mlp, mimic_o_proj, paths, eval_refs, batch_size, device):
     student.eval()
@@ -345,7 +327,13 @@ def main() -> None:
             r_m = ffn_in - mimic(heads)
             target = teacher_mlp(r_m)
             pred = student(r_m)
-            loss = train_loss(pred, target, loss_kind=args.loss_kind, relative_weight=args.loss_relative_weight)
+            loss = compression_train_loss(
+                pred,
+                target,
+                loss_kind=args.loss_kind,
+                relative_weight=args.loss_relative_weight,
+                cosine_weight=args.cosine_weight,
+            )
             opt.zero_grad(set_to_none=True)
             loss.backward()
             opt.step()
@@ -374,6 +362,7 @@ def main() -> None:
         "oproj_lr": oproj_lr,
         "loss_kind": args.loss_kind,
         "loss_relative_weight": args.loss_relative_weight,
+        "cosine_weight": args.cosine_weight,
         "teacher_ffn_params": teacher_ffn_params,
         "student_ffn_params": student_params,
         "mimic_oproj_params": mimic_params,

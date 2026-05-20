@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run capture (27) → mimic o_proj (31) → bottleneck FFN co-train (32) for each decoder layer.
 
-Designed for the Ubuntu host + Dolma sample layout used in FINDINGS.md. Resumes safely:
+Designed for the Ubuntu host + Dolma sample layout documented in **`research/FINDINGS.md`**. Resumes safely:
 skips capture if the expected shard count is present, skips 31 / 32 if their outputs exist.
 
 Example::
@@ -13,6 +13,7 @@ Example::
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -77,7 +78,12 @@ def run_step(cmd: list[str], *, dry_run: bool) -> None:
     print("CMD:", " ".join(cmd), flush=True)
     if dry_run:
         return
-    subprocess.run(cmd, check=True, cwd=str(repo_root()))
+    root = repo_root()
+    env = os.environ.copy()
+    src_pp = str(root / "src")
+    old_pp = env.get("PYTHONPATH", "").strip()
+    env["PYTHONPATH"] = src_pp if not old_pp else f"{src_pp}{os.pathsep}{old_pp}"
+    subprocess.run(cmd, check=True, cwd=str(root), env=env)
 
 
 def count_capture_shards(capture_dir: Path) -> int:

@@ -8,13 +8,11 @@ import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[1]
-_SCRIPT_DIR = _REPO / "scripts"
-sys.path.insert(0, str(_REPO))
-sys.path.insert(0, str(_SCRIPT_DIR))
+sys.path.insert(0, str(_REPO / "src"))
 
 import torch
 
-import _qk_surgery_lib as qklib  # noqa: E402
+import attention_compression.qk_surgery as qklib  # noqa: E402
 
 from attention_compression.activations import load_selected_rows_by_bin, rows_to_token_batch
 

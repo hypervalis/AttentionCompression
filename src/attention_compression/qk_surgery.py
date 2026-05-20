@@ -1,7 +1,12 @@
-"""Shared helpers for Q/K low-rank + dense-V model surgery.
+"""Q/K low-rank + dense-V surgery for Hugging Face–style causal LMs.
 
-Used by ``18_qk_dense_v_model_surgery_smoke.py`` and ``19_qk_dense_v_compare_outputs.py``.
-Kept as a top-level script-level module to avoid changing the public package API.
+Consumable API for applying trained low-rank Q/K checkpoints to an existing LM:
+
+- Patch ``q_proj`` / ``k_proj`` with :class:`MultiHeadQKLowRankProjection` (dense V unchanged).
+- Optional dense materialization helpers for fused-GEMM inference.
+
+Integrate via ``pip install -e `` on this repo, or prepend ``<repo>/src`` to ``PYTHONPATH``.
+Driver scripts remain under ``scripts/`` (e.g. ``18_*``, ``19_*``, ``21_*``).
 """
 from __future__ import annotations
 
@@ -10,6 +15,8 @@ import math
 from pathlib import Path
 
 import torch
+
+from attention_compression.model_hub import get_self_attn
 
 
 class MultiHeadQKLowRankProjection(torch.nn.Module):
@@ -228,7 +235,7 @@ def patch_layer_qk_dense_v(
     device: torch.device,
     materialize_dense: bool = False,
 ) -> None:
-    attn = model.model.layers[layer_index].self_attn
+    attn = get_self_attn(model, layer_index)
     input_dim = int(attn.q_proj.in_features)
     head_dim = int(attn.head_dim)
     if materialize_dense:

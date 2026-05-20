@@ -7,10 +7,13 @@ from pathlib import Path
 import pytest
 import torch
 
-_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-sys.path.insert(0, str(_SCRIPTS))
+_REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_REPO / "src"))
 
-import _qk_surgery_lib  # noqa: E402
+from attention_compression.qk_surgery import (
+    MultiHeadQKLowRankProjection,
+    materialize_dense_linear_from_branch_states,
+)
 
 
 def _random_branch_states(*, input_dim: int, head_dim: int, rank: int, num_heads: int, dtype: torch.dtype):
@@ -35,7 +38,7 @@ def test_fused_matches_naive(dtype: torch.dtype) -> None:
     states = _random_branch_states(
         input_dim=input_dim, head_dim=head_dim, rank=rank, num_heads=num_heads, dtype=dtype
     )
-    mod = _qk_surgery_lib.MultiHeadQKLowRankProjection(
+    mod = MultiHeadQKLowRankProjection(
         branch_states=states,
         branch_name="q",
         input_dim=input_dim,
@@ -72,7 +75,7 @@ def test_mixed_rank_falls_back_to_naive() -> None:
             "q.bias": torch.randn(8, dtype=dtype),
         },
     ]
-    mod = _qk_surgery_lib.MultiHeadQKLowRankProjection(
+    mod = MultiHeadQKLowRankProjection(
         branch_states=states,
         branch_name="q",
         input_dim=16,
@@ -100,7 +103,7 @@ def test_materialized_linear_matches_einsum() -> None:
         for k, v in list(st.items()):
             states[i][k] = v.to(device=device)
 
-    fused_mod = _qk_surgery_lib.MultiHeadQKLowRankProjection(
+    fused_mod = MultiHeadQKLowRankProjection(
         branch_states=states,
         branch_name="q",
         input_dim=input_dim,
@@ -109,7 +112,7 @@ def test_materialized_linear_matches_einsum() -> None:
         dtype=dtype,
     ).to(device)
     fused_mod.eval()
-    lin = _qk_surgery_lib.materialize_dense_linear_from_branch_states(
+    lin = materialize_dense_linear_from_branch_states(
         states,
         branch_name="q",
         input_dim=input_dim,

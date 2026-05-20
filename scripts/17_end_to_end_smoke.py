@@ -25,8 +25,7 @@ import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[1]
-if str(_REPO) not in sys.path:
-    sys.path.insert(0, str(_REPO))
+sys.path.insert(0, str(_REPO / "src"))
 
 
 def parse_args() -> argparse.Namespace:
@@ -92,6 +91,9 @@ def write_fixture(*, out_dir: Path, seq_len: int) -> Path:
 def run_step(cmd: list[str], *, cwd: Path, extra_env: dict[str, str] | None = None) -> None:
     print("+", " ".join(cmd), flush=True)
     env = os.environ.copy()
+    src_pp = str(cwd.resolve() / "src")
+    old_pp = env.get("PYTHONPATH", "").strip()
+    env["PYTHONPATH"] = src_pp if not old_pp else f"{src_pp}{os.pathsep}{old_pp}"
     if extra_env:
         env.update(extra_env)
     subprocess.run(cmd, cwd=str(cwd), check=True, env=env)

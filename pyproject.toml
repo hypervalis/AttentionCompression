@@ -1,17 +1,24 @@
 [project]
 name = "attention-compression"
 version = "0.1.0"
-description = "Distribution-aware local attention compression experiments."
+description = "Distribution-aware local attention compression for OLMo (see README; detailed logs under research/)."
 requires-python = ">=3.10"
 dependencies = [
   "numpy",
 ]
+
+[project.scripts]
+attention-compress = "attention_compression.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
   "pytest",
 ]
 tokenize = [
+  "transformers",
+  "torch",
+]
+cli = [
   "transformers",
   "torch",
 ]
@@ -24,4 +31,9 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["attention_compression*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+

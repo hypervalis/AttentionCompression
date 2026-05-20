@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -92,6 +93,15 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def _subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    root = repo_root()
+    src_pp = str(root / "src")
+    old_pp = env.get("PYTHONPATH", "").strip()
+    env["PYTHONPATH"] = src_pp if not old_pp else f"{src_pp}{os.pathsep}{old_pp}"
+    return env
+
+
 def base_cmd(args: argparse.Namespace, out_dir: Path) -> list[str]:
     return [
         sys.executable,
@@ -143,7 +153,7 @@ def run_one(args: argparse.Namespace, name: str, extra: list[str], results: list
     if args.dry_run:
         results.append({"name": name, "dry_run": True, "cmd": cmd})
         return
-    subprocess.run(cmd, check=True, cwd=str(repo_root()))
+    subprocess.run(cmd, check=True, cwd=str(repo_root()), env=_subprocess_env())
     report_path = out / "bottleneck_ffn_report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
     last = report["history"][-1]
